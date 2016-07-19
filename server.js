@@ -10,10 +10,10 @@ var getFromApi = function (endpoint, args) {
       if (response.ok) {
         emitter.emit('end', response.body);
       } else {
+        console.log('ERROR');
         emitter.emit('error', response.code);
       }
     });
-  console.log(emitter, '<-----EMITTER');
   return emitter;
 };
 
@@ -29,10 +29,11 @@ app.get('/search/:name', function (req, res) {
 
   searchReq.on('end', function (item) {
     var artist = item.artists.items[0];
-    var relatedReq = getFromApi('artists/' + artist.id + '/related-artists');
+    var relatedReq = getFromApi('artists/' + artist.id + '/related-artists', {
+      limit: 5
+    });
     relatedReq.on('end', function (item) {
       artist.related = item.artists;
-
       var completed = 0;
       var checkComplete = function () {
         if (completed === artist.related.length) {
@@ -41,7 +42,9 @@ app.get('/search/:name', function (req, res) {
       };
 
       artist.related.forEach(function (value, index) {
-        var topTracks = getFromApi('artists/' + artist.related[index].id + '/top-tracks');
+        var topTracks = getFromApi('artists/' + artist.related[index].id + '/top-tracks', {
+          country: 'US'
+        });
         topTracks.on('end', function (item) {
           artist.related[index].tracks = item.tracks;
           completed += 1;
